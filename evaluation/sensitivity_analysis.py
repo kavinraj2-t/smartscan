@@ -56,7 +56,7 @@ def run_sensitivity_analysis():
         
         # 1. Compute and save dynamic normalization stats
         norm_path = f"environment/norm_w{cfg['window']}_b{cfg['bands']}.json"
-        compute_normalization_stats(filepath, cfg['window'], cfg['bands'], output_path=norm_path)
+        compute_normalization_stats([filepath], cfg['window'], cfg['bands'], output_path=norm_path)
         
         # 2. Train RL Agent (Model A equivalent: no exploration bonus, no penalty)
         model_name = f"Sens_w{cfg['window']}_b{cfg['bands']}"
@@ -64,7 +64,7 @@ def run_sensitivity_analysis():
         
         print(f"\nTraining RL Agent for {cfg['name']}...")
         env = RFScanEnv(
-            filepath=filepath,
+            filepaths=[filepath],
             time_window=cfg['window'],
             num_bands=cfg['bands'],
             enable_exploration=False,
