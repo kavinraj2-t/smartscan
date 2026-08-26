@@ -15,13 +15,17 @@ class RFScanEnv(gym.Env):
     The agent only observes the state of the band it explicitly scans.
     """
     
-    def __init__(self, filepath, time_window=50000, num_bands=10, max_consecutive_scans=3):
+    def __init__(self, filepath, time_window=50000, num_bands=10, max_consecutive_scans=3, enable_exploration=True, enable_repeat_penalty=True):
         super(RFScanEnv, self).__init__()
         
         # Load Hidden Ground Truth
         self.ground_truth = build_environment(filepath, time_window=time_window, num_bands=num_bands)
         self.num_windows = self.ground_truth['num_windows']
         self.num_bands = num_bands
+        
+        # Ablation Flags
+        self.enable_exploration = enable_exploration
+        self.enable_repeat_penalty = enable_repeat_penalty
         
         # Load Normalization Stats
         self.norm_stats = load_normalization_stats()
@@ -159,11 +163,11 @@ class RFScanEnv(gym.Env):
             miss_penalty = self.MISS_PENALTY
             
         # Exploration Bonus (Bounded)
-        # We give it regardless of hit/miss IF it was uncertain, to reward checking stale bands
-        exploration_bonus = self.MAX_EXPLORATION_BONUS * uncertainty
+        if self.enable_exploration:
+            exploration_bonus = self.MAX_EXPLORATION_BONUS * uncertainty
         
         # Repeated Scan Penalty
-        if self.consecutive_scan_count > self.MAX_CONSECUTIVE_SCANS:
+        if self.enable_repeat_penalty and (self.consecutive_scan_count > self.MAX_CONSECUTIVE_SCANS):
             excess = self.consecutive_scan_count - self.MAX_CONSECUTIVE_SCANS
             repeat_scan_penalty = - (self.REPEAT_SCAN_PENALTY_BASE * excess)
             
