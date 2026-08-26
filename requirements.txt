@@ -1,0 +1,4 @@
+# Phase 1 has no external dependencies.
+# Future phases (ML/RL) will include:
+# gymnasium
+# stable-baselines3
