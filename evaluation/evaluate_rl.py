@@ -6,11 +6,12 @@ from stable_baselines3 import PPO
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from environment.rf_scan_env import RFScanEnv
 
-def evaluate_rl_model(filepath, model_path, name, enable_exploration, enable_repeat_penalty):
+def evaluate_rl_model(filepath, model_path, name, enable_exploration, enable_repeat_penalty, norm_stats_path="environment/normalization_stats.json", deterministic=True):
     env = RFScanEnv(
-        filepath=filepath,
+        filepaths=filepath,
         enable_exploration=enable_exploration,
-        enable_repeat_penalty=enable_repeat_penalty
+        enable_repeat_penalty=enable_repeat_penalty,
+        norm_stats_path=norm_stats_path
     )
     
     if not os.path.exists(model_path):
@@ -36,7 +37,7 @@ def evaluate_rl_model(filepath, model_path, name, enable_exploration, enable_rep
     terminated = False
     
     while not terminated:
-        action, _states = model.predict(obs, deterministic=True)
+        action, _states = model.predict(obs, deterministic=deterministic)
         action = int(action)
         
         if gt_signal_present[env.current_time_step, action] == 0:

@@ -6,28 +6,37 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data_processing.build_environment import build_environment
 
-def compute_normalization_stats(filepath, time_window, num_bands, output_path="environment/normalization_stats.json"):
+def compute_normalization_stats(filepaths, time_window, num_bands, output_path="environment/normalization_stats.json"):
     print("Computing normalization statistics from training data...")
-    ground_truth = build_environment(filepath, time_window=time_window, num_bands=num_bands)
+    if isinstance(filepaths, str):
+        filepaths = [filepaths]
+        
+    global_max_pulse = 0.0
+    all_active_amps = []
     
-    pulse_counts = ground_truth['pulse_count']
-    mean_amps = ground_truth['mean_amplitude']
+    for filepath in filepaths:
+        ground_truth = build_environment(filepath, time_window=time_window, num_bands=num_bands)
+        
+        pulse_counts = ground_truth['pulse_count']
+        mean_amps = ground_truth['mean_amplitude']
+        
+        local_max = float(np.max(pulse_counts))
+        if local_max > global_max_pulse:
+            global_max_pulse = local_max
+            
+        active_mask = pulse_counts > 0
+        active_amps = mean_amps[active_mask]
+        all_active_amps.extend(active_amps.tolist())
     
-    max_pulse_count = float(np.max(pulse_counts))
-    
-    # For amplitude, we only want to consider bins where signal is present
-    active_mask = pulse_counts > 0
-    active_amps = mean_amps[active_mask]
-    
-    if len(active_amps) > 0:
-        amp_p1 = float(np.percentile(active_amps, 1))
-        amp_p99 = float(np.percentile(active_amps, 99))
+    if len(all_active_amps) > 0:
+        amp_p1 = float(np.percentile(all_active_amps, 1))
+        amp_p99 = float(np.percentile(all_active_amps, 99))
     else:
         amp_p1 = 0.0
         amp_p99 = 1.0
         
     stats = {
-        "max_pulse_count": max_pulse_count,
+        "max_pulse_count": global_max_pulse,
         "amp_p1": amp_p1,
         "amp_p99": amp_p99,
         "time_window": time_window,
@@ -42,7 +51,7 @@ def compute_normalization_stats(filepath, time_window, num_bands, output_path="e
     print(json.dumps(stats, indent=4))
     return stats
 
-def load_normalization_stats(filepath="environment/normalization_stats.json"):
+def load_normalization_stats(filepath):
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Normalization stats missing at {filepath}. Run normalization.py first.")
     with open(filepath, 'r') as f:

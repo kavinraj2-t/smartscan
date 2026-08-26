@@ -15,12 +15,15 @@ class RFScanEnv(gym.Env):
     The agent only observes the state of the band it explicitly scans.
     """
     
-    def __init__(self, filepath, time_window=50000, num_bands=10, max_consecutive_scans=3, enable_exploration=True, enable_repeat_penalty=True):
+    def __init__(self, filepaths, time_window=50000, num_bands=10, max_consecutive_scans=3, enable_exploration=True, enable_repeat_penalty=True, norm_stats_path="environment/normalization_stats.json"):
         super(RFScanEnv, self).__init__()
         
-        # Load Hidden Ground Truth
-        self.ground_truth = build_environment(filepath, time_window=time_window, num_bands=num_bands)
-        self.num_windows = self.ground_truth['num_windows']
+        if isinstance(filepaths, str):
+            self.filepaths = [filepaths]
+        else:
+            self.filepaths = filepaths
+            
+        self.time_window = time_window
         self.num_bands = num_bands
         
         # Ablation Flags
@@ -28,11 +31,10 @@ class RFScanEnv(gym.Env):
         self.enable_repeat_penalty = enable_repeat_penalty
         
         # Load Normalization Stats
-        self.norm_stats = load_normalization_stats()
+        self.norm_stats = load_normalization_stats(norm_stats_path)
         self.max_pulse_log = math.log1p(self.norm_stats['max_pulse_count'])
         self.amp_p1 = self.norm_stats['amp_p1']
         self.amp_p99 = self.norm_stats['amp_p99']
-        self.max_episode_length = float(self.num_windows)
         
         # Reward Configuration
         self.HIT_REWARD = 1.0
@@ -45,13 +47,21 @@ class RFScanEnv(gym.Env):
         self.action_space = spaces.Discrete(self.num_bands)
         
         # Observation Space: (NUM_BANDS, 7 features)
-        # Features: time_last_scan, time_last_hit, last_pulse_count, hit_rate, mean_amp, scans, uncertainty
         self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(self.num_bands, 7), dtype=np.float32)
         
         self.reset()
         
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
+        
+        # Randomly select a file from the list for this episode
+        selected_file = self.np_random.choice(self.filepaths)
+        
+        # Load Ground Truth
+        self.ground_truth = build_environment(selected_file, time_window=self.time_window, num_bands=self.num_bands)
+        self.num_windows = self.ground_truth['num_windows']
+        self.max_episode_length = float(self.num_windows)
+        
         self.current_time_step = 0
         
         # Receiver's Internal Memory (Unnormalized)
