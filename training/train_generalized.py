@@ -13,29 +13,29 @@ def train_generalized():
     print("PHASE 11: GENERALIZED MULTI-FILE TRAINING")
     print("==================================================")
     
-    # Define training files (0 to 4)
+    # Define training files: 10 files total (0-5 and 7-10)
     base_dir = "data/raw/datasets--alan-turing-institute--turing-synthetic-radar-dataset/snapshots/68a07b0e0189c5b4ec748c4b66dedfe26f8f1c51/scan/train_scan"
-    train_files = [os.path.join(base_dir, f"config_{i}.h5") for i in range(5)]
+    train_files = [os.path.join(base_dir, f"config_{i}.h5") for i in [0, 1, 2, 3, 4, 5, 7, 8, 9, 10]]
     
-    # 1. Calculate global normalization statistics across all 5 files
+    # 1. Calculate global normalization statistics across all 10 files
     norm_path = "environment/norm_generalized.json"
     compute_normalization_stats(train_files, time_window=50000, num_bands=10, output_path=norm_path)
     
     # 2. Initialize Generalized Environment
-    # Using Model C (Exploration + Penalty) to prevent dead-band looping
+    # Using Model A (Stochastic Inference will be used, no artificial penalties needed)
     env = RFScanEnv(
         filepaths=train_files,
         time_window=50000,
         num_bands=10,
-        enable_exploration=True,
-        enable_repeat_penalty=True,
+        enable_exploration=False,
+        enable_repeat_penalty=False,
         norm_stats_path=norm_path
     )
     
     env = Monitor(env)
     
     # 3. Train Model
-    config_name = "Model_Generalized_5Files_ModelC"
+    config_name = "Model_Generalized_10Files"
     tensorboard_log_dir = f"./logs/{config_name}"
     
     model = PPO(
@@ -52,8 +52,8 @@ def train_generalized():
         name_prefix="ppo_model"
     )
     
-    # Since we have 5 files, let's bump timesteps slightly so it sees each file a few times
-    timesteps = 50000 
+    # 100,000 timesteps to ensure it sees all 10 files sufficiently
+    timesteps = 100000 
     
     print(f"\nTraining {config_name} for {timesteps} steps...")
     model.learn(total_timesteps=timesteps, callback=checkpoint_callback)

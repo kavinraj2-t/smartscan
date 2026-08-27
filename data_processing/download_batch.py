@@ -6,12 +6,12 @@ def download_batch():
     cache_dir = "data/raw"
     
     print("==================================================")
-    print("PHASE 11: DOWNLOADING DATASET BATCH (7 FILES)")
+    print("PHASE 12: DOWNLOADING DATASET BATCH (12 FILES)")
     print("==================================================")
     
     downloaded_files = []
     
-    for i in range(7):
+    for i in range(12):
         filename = f"scan/train_scan/config_{i}.h5"
         print(f"Downloading {filename}...")
         try:

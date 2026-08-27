@@ -137,7 +137,7 @@ def evaluate_all():
     print_results("3. Adaptive Heuristic", ah_res)
     
     # 4. RL Agent
-    rl_agent = PPO.load("models/Model_Generalized_5Files_final.zip")
+    rl_agent = PPO.load("models/Model_Generalized_10Files_final.zip")
     rl_res = run_evaluation(env, rl_agent, is_rl=True, stochastic=True)
     print_results("4. RL Smart Scan Scheduler (Stochastic)", rl_res)
     
